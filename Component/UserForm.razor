@@ -1,0 +1,105 @@
+@using System.ComponentModel.DataAnnotations
+@using EventEase.Models
+@using EventEase.Services
+@inject EventEase.Services.UserStateService UserState
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter]
+    public EventCallback OnUserSubmitted { get; set; }
+
+    private User User = new();
+
+    private UserList userList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        userList = await UserState.GetUserListAsync();
+    }
+
+    private async Task SubmitForm()
+    {
+        await UserState.SetUserAsync(User); // Add to state asynchronously
+        await UserState.AddUserAsync(User); // Add to state asynchronously
+        User = new User(); // Reset
+        Console.WriteLine("User added successfully.");
+
+        // Trigger the callback event if assigned
+        if (OnUserSubmitted.HasDelegate)
+        {
+            await OnUserSubmitted.InvokeAsync();
+        }
+    }
+}
+
+<div class="container">
+    <div class="row">
+        <!-- First Column (User Form) -->
+        <div class="col-md-3">
+            <EditForm Model="User" OnValidSubmit="@EventCallback.Factory.Create(this, SubmitForm)">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label for="name">Username</label>
+                    <InputText id="name" class="form-control" @bind-Value="User.Username" />
+                </div>
+
+                <div class="form-grouo">
+                    <label for="password">Password</label>
+                    <InputText id="password" type="password" class="form-control" @bind-value="User.Password" />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <InputText id="email" class="form-control" @bind-Value="User.Email" />
+                </div>
+
+                <div class="form-group">
+                    <label for="firstname">Firstname</label>
+                    <InputText id="role" class="form-control" @bind-Value="User.FirstName" />
+                </div>
+
+                <div class="form-group">
+                    <label for="lastname">Lastname</label>
+                    <InputText id="lastname" class="form-control" @bind-Value="User.LastName" />
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-3">Add User</button>
+            </EditForm>
+        </div>
+
+        <!-- Second Column (User List) -->
+        <div class="col-md-9">
+            @if(userList.Users.Count == 0)
+            {
+                <p>No User available.</p>
+            }
+            else
+            {
+                <table class="table table-striped table-bordered table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Firstname</th>
+                            <th>Lastname</th>
+                            <th class="text-center">Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in userList.Users)
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@user.Email</td>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td><button class="btn btn-danger" @onclick="() => UserState.RemoveUserAsync(user)">Remove</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

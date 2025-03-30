@@ -1,0 +1,86 @@
+@using System.ComponentModel.DataAnnotations
+@using EventEase.Models
+@using EventEase.Services
+@inject EventEase.Services.LoginSessionStateService LoginState
+
+@code
+{
+    [Parameter]
+    public EventCallback OnLoginSubmitted { get; set; }
+
+    private string Message = string.Empty;
+    private bool IsAttenthicated = false;
+    private string Exist = string.Empty;
+
+    private User User = new();
+
+    private async Task LogUserAsync()
+    {
+        await LoginState.SetUserAsync(User); // Add to state asynchronously
+        User = new User(); // Reset
+    }
+
+    private async Task LogInUserAsync()
+    {
+        Message = await LoginState.LoginUserAsync(User);
+
+        // Invoke the event callback if provided
+        if (OnLoginSubmitted.HasDelegate)
+        {
+            await OnLoginSubmitted.InvokeAsync();
+        }
+    }
+
+    private async Task LogOutUserAsync()
+    {
+        Message = await LoginState.LogoutUserAsync();
+    }
+
+    private async Task IsLogInOrNot()
+    {
+        IsAttenthicated = await LoginState.IsAuthenticatedAsync();
+        if(IsAttenthicated)
+        {
+            Exist = "User Exist!";
+        }
+        else
+        {
+            Exist = "User don't Exist!";
+        }
+    }
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <h4>Login Session for User</h4>
+             <EditForm Model="User" OnValidSubmit="@EventCallback.Factory.Create(this, LogUserAsync)">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label for="name">Username</label>
+                    <InputText id="name" class="form-control" @bind-Value="User.Username" />
+                </div>
+
+                <div class="form-grouo">
+                    <label for="password">Password</label>
+                    <InputText id="password" type="password" class="form-control" @bind-value="User.Password" />
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary btn-block mt-3" @onclick="LogInUserAsync">Login</button>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-secondary btn-block mt-3" @onclick="LogOutUserAsync">Login out</button>
+                    </div>
+                </div>
+                <div>
+                    <p>@Message</p>
+                    <p>@Exist</p>
+                </div>
+             </EditForm>
+        </div>
+        <div class="col-md-8"></div>
+    </div>
+</div>

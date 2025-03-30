@@ -1,0 +1,121 @@
+@using System.ComponentModel.DataAnnotations
+@using EventEase.Models
+@using EventEase.Services
+@inject EventEase.Services.EventStateService EventState
+@inject NavigationManager Navigation
+
+
+
+@code {
+    [Parameter] 
+    public EventCallback OnEventSubmitted { get; set; }
+
+    private Event Event = new();
+
+    private EventList eventList = new(); // Initialize an empty list
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventList = await EventState.GetEventListAsync();
+    }
+
+    private async Task SubmitForm()
+    {
+        await EventState.SetEventAsync(Event); // Add to state
+        await EventState.AddEventAsync(Event); // Add to state
+        Event = new Event(); // Reset
+        Console.WriteLine("Event added successfully.");
+
+        if (OnEventSubmitted.HasDelegate)
+        {
+            await OnEventSubmitted.InvokeAsync();
+        }
+    }
+}
+
+<div class="container"> 
+    <div class="row">
+        <!-- First Column (Event Form) -->
+        <div class="col-md-3">
+            <EditForm Model="Event" OnValidSubmit="@EventCallback.Factory.Create(this, SubmitForm)">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label for="EventName">Event Name:</label>
+                    <InputText id="EventName" class="form-control" @bind-Value="Event.EventName" />
+                    <ValidationMessage For="@(() => Event.EventName)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label for="EventDescription">Event Description:</label>
+                    <InputText id="EventDescription" class="form-control" @bind-Value="Event.EventDescription" />
+                    <ValidationMessage For="@(() => Event.EventDescription)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label for="EventLocation">Event Location:</label>
+                    <InputText id="EventLocation" class="form-control" @bind-Value="Event.EventLocation" />
+                    <ValidationMessage For="@(() => Event.EventLocation)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label for="EventDateTime">Event Date & Time:</label>
+                    <InputText id="EventDateTime" class="form-control" @bind-Value="Event.EventDateTime" />
+                    <ValidationMessage For="@(() => Event.EventDateTime)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label for="EventDuration">Event Duration (minutes):</label>
+                    <InputText id="EventDuration" class="form-control" @bind-Value="Event.EventDuration" />
+                    <ValidationMessage For="@(() => Event.EventDuration)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label for="EventOrganizer">Event Organizer:</label>
+                    <InputText id="EventOrganizer" class="form-control" @bind-Value="Event.EventOrganizer" />
+                    <ValidationMessage For="@(() => Event.EventOrganizer)" class="text-danger" />
+                </div>
+
+                <!-- Submit Button inside Form -->
+                <button type="submit" class="btn btn-primary btn-block mt-3">Create Event</button>
+            </EditForm>
+        </div>
+
+        <!-- Second Column (Event List Table) -->
+        <div class="col-md-9">
+            @if(eventList.Events.Count == 0)
+            {
+                <p>No Event available.</p>
+            }
+            else
+            {
+                <table class="table table-striped table-bordered table-hover table-sm">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th class="text-center">Event Name</th>
+                            <th class="text-center">Description</th>
+                            <th class="text-center">Location</th>
+                            <th class="text-center">Date & Time</th>
+                            <th class="text-center">Organizer</th>
+                            <th class="text-center">Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var evt in eventList.Events)
+                        {
+                            <tr>
+                                <td>@evt.EventName</td>
+                                <td>@evt.EventDescription</td>
+                                <td>@evt.EventLocation</td>
+                                <td>@evt.EventDateTime</td>
+                                <td>@evt.EventOrganizer</td>
+                                <td><button class="btn btn-danger" @onclick="() => EventState.RemoveEventAsync(evt)">Remove</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
